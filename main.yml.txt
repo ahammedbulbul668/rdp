@@ -1,0 +1,54 @@
+name: Windows-CRD
+
+on:
+  workflow_dispatch:
+    inputs:
+      authcode:
+        description: 'Enter CRD code'
+        required: true
+      pincode:
+        description: 'Six digit Pin'
+        required: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14.x'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install CRD and Chrome
+        shell: powershell
+        run: |
+          Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
+          & {$P = $env:TEMP + '\chromeremotedesktophost.msi'; Invoke-WebRequest 'https://dl.google.com/edgedl/chrome-remote-desktop/chromeremotedesktophost.msi' -OutFile $P; Start-Process $P -Wait; Remove-Item $P}
+          & {$P = $env:TEMP + '\chrome_installer.exe'; Invoke-WebRequest 'https://dl.google.com/chrome/install/latest/chrome_installer.exe' -OutFile $P; Start-Process -FilePath $P -Args '/install' -Verb RunAs -Wait; Remove-Item $P}
+
+      - name: Starting CRD
+        run: ${{ github.event.inputs.authcode }} -pin=${{ github.event.inputs.pincode }} --timeout=18000
+
+      - name: Keep alive
+        run: |
+          $i = 2000000
+          do {
+              Write-Host $i
+              Sleep 60
+              $i--
+          } while ($i -gt 0)
+
+      - name: Handle errors
+        if: failure()
+        run: |
+          echo "There was an error in the workflow"
+          exit 1
+          
+      # Add more steps as needed with helpful comments
