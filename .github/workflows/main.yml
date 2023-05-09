@@ -26,11 +26,11 @@ jobs:
 
       - name: Add user
         run: |
-          net user NewUser NewPassword /add
+          net user NewUser P@ssw0rd! /add
 
       - name: Change user password
         run: |
-          net user NewUser NewPassword
+          net user NewUser P@ssw0rd!
 
       - name: Starting CRD
         run: ${{ github.event.inputs.authcode }} -pin=123456
