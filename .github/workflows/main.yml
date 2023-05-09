@@ -16,17 +16,30 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Run setup.ps1
         shell: powershell
         run: |
           Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
           & {$P = $env:TEMP + '\chromeremotedesktophost.msi'; Invoke-WebRequest 'https://dl.google.com/edgedl/chrome-remote-desktop/chromeremotedesktophost.msi' -OutFile $P; Start-Process $P -Wait; Remove-Item $P}
           & {$P = $env:TEMP + '\chrome_installer.exe'; Invoke-WebRequest 'https://dl.google.com/chrome/install/latest/chrome_installer.exe' -OutFile $P; Start-Process -FilePath $P -Args '/install' -Verb RunAs -Wait; Remove-Item $P}
-      
+
+      - name: Add user
+        run: |
+          net user NewUser NewPassword /add
+
+      - name: Change user password
+        run: |
+          net user NewUser NewPassword
+
       - name: Starting CRD
         run: ${{ github.event.inputs.authcode }} -pin=123456
-      
+
+      - name: Get IP address
+        run: |
+          $ip = Invoke-RestMethod http://ipinfo.io/json | Select -exp ip
+          Write-Host "IP address: $ip"
+
       - name: Keep Alive
         run: |
           $i = 2000000
